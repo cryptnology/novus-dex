@@ -25,7 +25,7 @@ export const loadAccount = async (provider, dispatch) => {
   dispatch({ type: "ACCOUNT_LOADED", account });
 
   let balance = await provider.getBalance(account);
-  balance = ethers.utils.formatEther(account);
+  balance = ethers.utils.formatEther(balance);
 
   dispatch({ type: "BALANCE_LOADED", balance });
 

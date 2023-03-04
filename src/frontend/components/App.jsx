@@ -1,38 +1,54 @@
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
+import config from "frontend/config";
 
-import config from "frontend/config.json";
 import {
-  loadNetwork,
   loadProvider,
+  loadNetwork,
   loadAccount,
   loadTokens,
   loadExchange,
-} from "store/interactions";
+} from "../../store/interactions";
 
-const App = () => {
+import Navbar from "./Navbar";
+
+function App() {
   const dispatch = useDispatch();
 
+  const loadBlockchainData = async () => {
+    // Connect Ethers to blockchain
+    const provider = loadProvider(dispatch);
+
+    // Fetch current network's chainId (e.g. hardhat: 31337, kovan: 42)
+    const chainId = await loadNetwork(provider, dispatch);
+
+    // Reload page when network changes
+    window.ethereum.on("chainChanged", () => {
+      window.location.reload();
+    });
+
+    // Fetch current account & balance from Metamask when changed
+    window.ethereum.on("accountsChanged", () => {
+      loadAccount(provider, dispatch);
+    });
+
+    // Load token smart contracts
+    const novus = config[chainId].novus;
+    const mETH = config[chainId].mETH;
+    await loadTokens(provider, [novus.address, mETH.address], dispatch);
+
+    // Load exchange smart contract
+    const exchangeConfig = config[chainId].exchange;
+    await loadExchange(provider, exchangeConfig.address, dispatch);
+  };
+
   useEffect(() => {
-    const loadBlockchainData = async () => {
-      const provider = loadProvider(dispatch);
-      const chainId = await loadNetwork(provider, dispatch);
-
-      await loadAccount(provider, dispatch);
-
-      const novus = config[chainId].novus;
-      const mETH = config[chainId].mETH;
-      await loadTokens(provider, [novus.address, mETH.address], dispatch);
-
-      const exchange = config[chainId].exchange;
-      await loadExchange(provider, exchange.address, dispatch);
-    };
     loadBlockchainData();
-  }, [dispatch]);
+  });
 
   return (
     <div>
-      {/* Navbar */}
+      <Navbar />
 
       <main className="exchange grid">
         <section className="exchange__section--left grid">
@@ -56,6 +72,6 @@ const App = () => {
       {/* Alert */}
     </div>
   );
-};
+}
 
 export default App;
